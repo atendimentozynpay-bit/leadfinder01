@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 
 const STATUS_LIST = ['Novo','Contatado','Fatura Coletada','Fechado','Já Possui Solar']
 
-export default function LeadDetailModal({ lead, onClose, onUpdate }) {
+export default function LeadDetailModal({ lead, onClose, onUpdate, onDelete }) {
   const { profile } = useAuth()
   const [tab, setTab] = useState('info') // info | simular | pitch
   const [status, setStatus] = useState(lead.status)
@@ -15,7 +15,22 @@ export default function LeadDetailModal({ lead, onClose, onUpdate }) {
   const [loadingPitch, setLoadingPitch] = useState(false)
   const [loadingImg, setLoadingImg] = useState(false)
   const [imagemSolar, setImagemSolar] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting]           = useState(false)
   const hasSolar = status === 'Já Possui Solar'
+
+  async function handleDelete() {
+    if (!confirmDelete) { setConfirmDelete(true); return }
+    setDeleting(true)
+    try {
+      await onDelete(lead.id)
+      onClose()
+    } catch (e) {
+      alert('Erro ao excluir: ' + (e.message || 'tente novamente'))
+      setDeleting(false)
+      setConfirmDelete(false)
+    }
+  }
 
   async function salvarStatus(s) {
     setStatus(s)
@@ -82,11 +97,24 @@ export default function LeadDetailModal({ lead, onClose, onUpdate }) {
         borderTop: '0.5px solid rgba(255,255,255,0.1)',
         fontFamily: "'DM Sans',sans-serif",
       }}>
-        {/* Handle */}
-        <div style={{ width: 36, height: 3, background: 'rgba(255,255,255,0.2)', borderRadius: 2, margin: '12px auto 0' }} />
+        {/* Handle + botão fechar */}
+        <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px 0', gap: 10 }}>
+          <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.2)', borderRadius: 2 }} />
+          <button
+            onClick={onClose}
+            style={{
+              width: 28, height: 28, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.08)',
+              border: '0.5px solid rgba(255,255,255,0.15)',
+              color: '#94a3b8', fontSize: 15, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >✕</button>
+        </div>
 
         {/* Header */}
-        <div style={{ padding: '12px 16px 0' }}>
+        <div style={{ padding: '10px 16px 0' }}>
           {lead.foto_url && <img src={lead.foto_url} alt="" style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 10, marginBottom: 10 }} />}
           <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 17, fontWeight: 700, color: '#f8fafc' }}>{lead.nome_empresa}</div>
           <div style={{ fontSize: 12, color: '#059669', marginBottom: 8 }}>{lead.nicho} · {lead.bairro || 'Campo Grande'}</div>
@@ -140,6 +168,34 @@ export default function LeadDetailModal({ lead, onClose, onUpdate }) {
               <button onClick={handleWhatsApp} style={{ width: '100%', marginTop: 14, background: '#25d366', border: 'none', borderRadius: 10, padding: 12, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                 💬 Abrir WhatsApp
               </button>
+
+              {/* Excluir lead */}
+              <div style={{ marginTop: 20, paddingTop: 16, borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
+                {!confirmDelete ? (
+                  <button
+                    onClick={handleDelete}
+                    style={{ width: '100%', padding: 10, borderRadius: 10, border: '0.5px solid rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.07)', color: '#f87171', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}
+                  >
+                    🗑️ Excluir este lead
+                  </button>
+                ) : (
+                  <div style={{ background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.4)', borderRadius: 10, padding: 12 }}>
+                    <div style={{ fontSize: 13, color: '#f87171', fontWeight: 500, marginBottom: 4 }}>Confirmar exclusão?</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 12 }}>Esta ação não pode ser desfeita. O lead será removido permanentemente.</div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={() => setConfirmDelete(false)}
+                        style={{ flex: 1, padding: 9, borderRadius: 8, border: '0.5px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#94a3b8', fontSize: 12, cursor: 'pointer' }}
+                      >Cancelar</button>
+                      <button
+                        onClick={handleDelete}
+                        disabled={deleting}
+                        style={{ flex: 1, padding: 9, borderRadius: 8, border: 'none', background: '#ef4444', color: '#fff', fontSize: 12, fontWeight: 600, cursor: deleting ? 'wait' : 'pointer', opacity: deleting ? 0.7 : 1 }}
+                      >{deleting ? '⏳ Excluindo...' : '✓ Sim, excluir'}</button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
