@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { fetchLeads, updateLead } from '../lib/supabase'
+import { fetchLeads, updateLead, deleteLead } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import LeadDetailModal from '../components/LeadDetailModal'
 
@@ -29,6 +29,12 @@ export default function LeadsPage() {
     const updated = await updateLead(id, updates)
     setLeads(prev => prev.map(l => l.id === id ? updated : l))
     setSelected(updated)
+  }
+
+  async function handleDelete(id) {
+    await deleteLead(id)
+    setLeads(prev => prev.filter(l => l.id !== id))
+    setSelected(null)
   }
 
   const STATUS_LIST = ['Todos','Novo','Contatado','Fatura Coletada','Fechado','Já Possui Solar']
@@ -105,7 +111,7 @@ export default function LeadsPage() {
         ))}
       </div>
 
-      {selected && <LeadDetailModal lead={selected} onClose={() => setSelected(null)} onUpdate={handleUpdate} />}
+      {selected && <LeadDetailModal lead={selected} onClose={() => setSelected(null)} onUpdate={handleUpdate} onDelete={handleDelete} />}
     </div>
   )
 }
